@@ -1,5 +1,4 @@
 #validates incoming data
-
 from pydantic import BaseModel
 from datetime import datetime
 

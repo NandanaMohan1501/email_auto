@@ -1,55 +1,120 @@
-#talks to sqlite
-
-from sqlalchemy.orm import Session
-from app import models, schemas
+from app.db import get_cursor, SCHEMA
 from app.services.classifier import classify_email
 
-def create_email(db: Session, email: schemas.EmailCreate):
 
 
-
-    #Checks for duplication using the unique message_id.
-    #Inserts the new email into the SQLite database  
-    #classify_email:asynchronously to obtain AI-generated classification tags.
-    #Updates and saves the category, priority, and summary directly back to the database row.
-
-    existing_email = get_email_by_message_id(db, email.message_id)
-
-    if existing_email:
+def row_to_dict(cursor, row):
+    if row is None:
         return None
 
-    db_email = models.Email(**email.model_dump())
+    columns = [column[0] for column in cursor.description]
 
-    db.add(db_email)
-    db.commit()
-    db.refresh(db_email)
-    classification = classify_email(
-    db_email.subject,
-    db_email.body
-    )
+    return dict(zip(columns, row))
 
-    db_email.category = classification["category"]
+#duplicate check 
 
-    db_email.priority = classification["priority"]
+def get_email_by_message_id(message_id: str):
 
-    db_email.summary = classification["summary"]
+    with get_cursor() as cur:
 
-    db.commit()
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Emails
+            WHERE message_id=?
+            """,
+            (message_id,),
+        )
 
-    db.refresh(db_email)
+        row = cur.fetchone()
 
+        return row_to_dict(cur, row)
 
-    return db_email
+#insert emails
 
-def get_emails(db: Session):
-    return db.query(models.Email).all()
+def create_email(email):
 
-def get_email(db: Session, email_id: int):
-    return db.query(models.Email).filter(models.Email.id == email_id).first()
+    if get_email_by_message_id(email.message_id):
+        return None
 
-def get_email_by_message_id(db: Session, message_id: str):
-    return (
-        db.query(models.Email)
-        .filter(models.Email.message_id == message_id)
-        .first()
-    )
+    result = classify_email(email.subject, email.body)
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            INSERT INTO {SCHEMA}.Emails
+            (
+                mailbox,
+                sender,
+                subject,
+                body,
+                preview,
+                received_on,
+                conversation_id,
+                message_id,
+                status,
+                category,
+                priority,
+                summary
+            )
+
+            OUTPUT INSERTED.id
+
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                email.mailbox,
+                email.sender,
+                email.subject,
+                email.body,
+                email.preview,
+                email.received_on,
+                email.conversation_id,
+                email.message_id,
+                email.status,
+                result["category"],
+                result["priority"],
+                result["summary"],
+            ),
+        )
+
+        new_id = cur.fetchone()[0]
+
+    return get_email(new_id)
+
+#get all emails
+
+def get_emails():
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Emails
+            ORDER BY received_on DESC
+            """
+        )
+
+        rows = cur.fetchall()
+
+        return [row_to_dict(cur, row) for row in rows]
+#get one email
+
+def get_email(email_id: int):
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Emails
+            WHERE id=?
+            """,
+            (email_id,),
+        )
+
+        row = cur.fetchone()
+
+        return row_to_dict(cur, row)

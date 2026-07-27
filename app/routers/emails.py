@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException
 
-from app.db import get_db
 from app import schemas, crud
 
 router = APIRouter(
@@ -11,8 +9,9 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.EmailResponse)
-def create_email(email: schemas.EmailCreate, db: Session = Depends(get_db)):
-    created_email = crud.create_email(db, email)
+def create_email(email: schemas.EmailCreate):
+
+    created_email = crud.create_email(email)
 
     if created_email is None:
         raise HTTPException(
@@ -22,17 +21,22 @@ def create_email(email: schemas.EmailCreate, db: Session = Depends(get_db)):
 
     return created_email
 
+
 @router.get("/", response_model=list[schemas.EmailResponse])
-def get_all_emails(db: Session = Depends(get_db)):
-    return crud.get_emails(db)
+def get_all_emails():
+
+    return crud.get_emails()
 
 
 @router.get("/{email_id}", response_model=schemas.EmailResponse)
-def get_email(email_id: int, db: Session = Depends(get_db)):
-    return crud.get_email(db, email_id)
+def get_email(email_id: int):
 
+    email = crud.get_email(email_id)
 
+    if email is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Email not found."
+        )
 
-
-
-
+    return email

@@ -1,27 +1,37 @@
-#creates connection to sqlite 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from contextlib import contextmanager
+import pyodbc
 
-DATABASE_URL = "sqlite:///./emails.db"
+from app.config.settings import settings
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
+SCHEMA = settings.sql_schema
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
 
-Base = declarative_base()
+def get_connection():
+    return pyodbc.connect(
+        f"DRIVER={{{settings.sql_driver}}};"
+        f"SERVER={settings.sql_server};"
+        f"DATABASE={settings.sql_database};"
+        f"UID={settings.sql_user};"
+        f"PWD={settings.sql_password};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+    )
 
-def get_db(): #This gives FastAPI a database session for each request
-    db = SessionLocal()
+
+@contextmanager
+def get_cursor():
+
+    conn = get_connection()
+    cursor = conn.cursor()
 
     try:
-        yield db
+        yield cursor
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
 
     finally:
-        db.close()
+        cursor.close()
+        conn.close()
