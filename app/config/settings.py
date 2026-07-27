@@ -1,3 +1,5 @@
+
+# pyrefly: ignore [missing-import]
 from pydantic_settings import BaseSettings
 
 
@@ -10,7 +12,12 @@ class Settings(BaseSettings):
     sql_schema: str
     #sql_pool_size: int
 
-    gemini_api_key: str
+# Azure OpenAI
+    azure_openai_api_endpoint: str
+    azure_openai_api_deployment_name: str
+    azure_openai_api_key: str
+    azure_openai_api_version: str
+
 
     class Config:
         env_file = ".env"

@@ -1,12 +1,6 @@
 import json
-import os
 
-from dotenv import load_dotenv
-from google import genai
-
-load_dotenv()
-
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+from app.llm import get_llm
 
 
 def classify_email(subject: str, body: str):
@@ -48,14 +42,10 @@ Return exactly this JSON:
 }}
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
+    llm = get_llm()
 
-    text = response.text.strip()
+    response = llm.invoke(prompt)
 
-    # Remove markdown fences if present
-    text = text.replace("```json", "").replace("```", "").strip()
+    text = response.content.strip()
 
     return json.loads(text)

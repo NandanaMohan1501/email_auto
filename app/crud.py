@@ -64,19 +64,19 @@ def create_email(email):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                email.mailbox,
-                email.sender,
-                email.subject,
-                email.body,
-                email.preview,
-                email.received_on,
-                email.conversation_id,
-                email.message_id,
-                email.status,
-                result["category"],
-                result["priority"],
-                result["summary"],
-            ),
+            email.mailbox,
+            email.sender,
+            email.subject,
+            email.body,
+            email.preview,
+            email.received_on,
+            email.conversation_id,
+            email.message_id,
+            "New",         
+            result["category"],
+            result["priority"],
+            result["summary"],
+),
         )
 
         new_id = cur.fetchone()[0]
