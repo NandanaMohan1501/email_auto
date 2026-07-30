@@ -23,3 +23,13 @@ class EmailResponse(EmailCreate):
 
     class Config:
         from_attributes = True
+
+class ThreadResponse(BaseModel):
+    thread_id: int
+    conversation_id: str
+    mailbox: str
+    status: str
+    summary: str | None = None
+
+    class Config:
+        from_attributes = True

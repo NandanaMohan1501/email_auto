@@ -9,6 +9,8 @@ class Email(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
+    #thread_id = 
+
     mailbox = Column(String, nullable=False)
 
     sender = Column(String, nullable=False)
@@ -29,3 +31,6 @@ class Email(Base):
     category = Column(String, nullable=True)
     priority = Column(String, nullable=True)
     summary = Column(Text, nullable=True)
+
+
+

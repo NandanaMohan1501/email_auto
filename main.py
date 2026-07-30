@@ -1,6 +1,6 @@
 from fastapi import FastAPI
+from app.routers import emails,threads
 
-from app.routers import emails
 
 
 app = FastAPI(        #Creates the root app = FastAPI(...) instance.
@@ -8,6 +8,7 @@ app = FastAPI(        #Creates the root app = FastAPI(...) instance.
 )
 
 app.include_router(emails.router)
+app.include_router(threads.router)
 
 
 @app.get("/")

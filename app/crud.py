@@ -30,12 +30,143 @@ def get_email_by_message_id(message_id: str):
 
         return row_to_dict(cur, row)
 
+# ---------- THREADS ----------
+
+def get_thread_by_conversation_id(conversation_id: str, mailbox: str):
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Threads
+            WHERE conversation_id = ?
+            AND mailbox = ?
+            """,
+            (conversation_id, mailbox),
+        )
+
+        row = cur.fetchone()
+
+        return row_to_dict(cur, row)
+
+
+def create_thread(conversation_id: str, mailbox: str):
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            INSERT INTO {SCHEMA}.Threads
+            (
+                conversation_id,
+                mailbox,
+                status
+            )
+
+            OUTPUT INSERTED.thread_id
+
+            VALUES (?, ?, ?)
+            """,
+            (
+                conversation_id,
+                mailbox,
+                "Open",
+            ),
+        )
+
+        return cur.fetchone()[0]
+
+
+def get_threads():
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Threads
+            ORDER BY updated_on DESC
+            """
+        )
+
+        rows = cur.fetchall()
+
+        return [row_to_dict(cur, row) for row in rows]
+
+
+def get_thread(thread_id: int):
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Threads
+            WHERE thread_id = ?
+            """,
+            (thread_id,),
+        )
+
+        row = cur.fetchone()
+
+        return row_to_dict(cur, row)
+
+
+def get_thread_emails(thread_id: int):
+
+    with get_cursor() as cur:
+
+        cur.execute(
+            f"""
+            SELECT *
+            FROM {SCHEMA}.Emails
+            WHERE thread_id = ?
+            ORDER BY received_on ASC
+            """,
+            (thread_id,),
+        )
+
+        rows = cur.fetchall()
+
+        return [row_to_dict(cur, row) for row in rows]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #insert emails
 
 def create_email(email):
 
     if get_email_by_message_id(email.message_id):
         return None
+
+    thread = get_thread_by_conversation_id(
+        email.conversation_id,
+        email.mailbox,
+    )
+
+    if thread:
+        thread_id = thread["thread_id"]
+    else:
+        thread_id = create_thread(
+            email.conversation_id,
+            email.mailbox,
+        )
 
     result = classify_email(email.subject, email.body)
 
@@ -45,6 +176,7 @@ def create_email(email):
             f"""
             INSERT INTO {SCHEMA}.Emails
             (
+                thread_id,
                 mailbox,
                 sender,
                 subject,
@@ -61,9 +193,10 @@ def create_email(email):
 
             OUTPUT INSERTED.id
 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
+            thread_id,
             email.mailbox,
             email.sender,
             email.subject,

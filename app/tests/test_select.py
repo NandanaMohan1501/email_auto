@@ -2,6 +2,20 @@ from app.db import get_cursor, SCHEMA
 
 with get_cursor() as cur:
 
+    print("\nTHREADS\n")
+
+    cur.execute(
+        f"""
+        SELECT *
+        FROM {SCHEMA}.Threads
+        """
+    )
+
+    for row in cur.fetchall():
+        print(row)
+
+    print("\nEMAILS\n")
+
     cur.execute(
         f"""
         SELECT *
@@ -9,10 +23,5 @@ with get_cursor() as cur:
         """
     )
 
-    rows = cur.fetchall()
-
-    for row in rows:
+    for row in cur.fetchall():
         print(row)
-
-
-        
