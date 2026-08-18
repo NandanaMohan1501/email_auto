@@ -3,6 +3,12 @@
   "marks": {
     "app/models.py": [
       "review"
+    ],
+    "app/routers/ankita_endpoints": [
+      "star"
+    ],
+    "app/ankita_crud": [
+      "star"
     ]
   }
 }

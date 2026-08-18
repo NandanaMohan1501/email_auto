@@ -1,0 +1,249 @@
+# crud.py
+ 
+# from app.db import get_cursor, SCHEMA
+# from app.services.classifier import classify_email
+ 
+ 
+ 
+# def row_to_dict(cursor, row):
+#     if row is None:
+#         return None
+ 
+#     columns = [column[0] for column in cursor.description]
+ 
+#     return dict(zip(columns, row))
+ 
+# #duplicate check
+ 
+# def get_email_by_message_id(message_id: str):
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(
+#             f"""
+#             SELECT *
+#             FROM {SCHEMA}.Emails
+#             WHERE message_id=?
+#             """,
+#             (message_id,),
+#         )
+ 
+#         row = cur.fetchone()
+ 
+#         return row_to_dict(cur, row)
+ 
+# #insert emails
+ 
+# def create_email(email):
+ 
+#     if get_email_by_message_id(email.message_id):
+#         return None
+ 
+#     result = classify_email(email.subject, email.body)
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(
+#             f"""
+#             INSERT INTO {SCHEMA}.Emails
+#             (
+#                 mailbox,
+#                 sender,
+#                 subject,
+#                 body,
+#                 preview,
+#                 received_on,
+#                 conversation_id,
+#                 message_id,
+#                 status,
+#                 category,
+#                 priority,
+#                 summary
+#             )
+ 
+#             OUTPUT INSERTED.id
+ 
+#             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#             """,
+#             (
+#             email.mailbox,
+#             email.sender,
+#             email.subject,
+#             email.body,
+#             email.preview,
+#             email.received_on,
+#             email.conversation_id,
+#             email.message_id,
+#             "New",        
+#             result["category"],
+#             result["priority"],
+#             result["summary"],
+# ),
+#         )
+ 
+#         new_id = cur.fetchone()[0]
+ 
+#     return get_email(new_id)
+ 
+# #get all emails
+ 
+# def get_emails(
+#     mailbox=None,
+#     category=None,
+#     priority=None,
+#     status=None,
+#     sender=None,
+#     search=None,
+#     date=None,
+# ):
+ 
+#     query = f"""
+#     SELECT *
+#     FROM {SCHEMA}.Emails
+#     WHERE 1=1
+#     """
+ 
+#     params = []
+ 
+#     if mailbox and mailbox.lower() != "all":
+#         query += " AND mailbox=?"
+#         params.append(mailbox)
+ 
+#     if category:
+#         query += " AND category=?"
+#         params.append(category)
+ 
+#     if priority:
+#         query += " AND priority=?"
+#         params.append(priority)
+ 
+#     if status:
+#         query += " AND status=?"
+#         params.append(status)
+ 
+#     if sender:
+#         query += " AND sender=?"
+#         params.append(sender)
+ 
+#     if search:
+#         query += " AND (subject LIKE ? OR body LIKE ?)"
+#         params.append(f"%{search}%")
+#         params.append(f"%{search}%")
+ 
+#     if date == "today":
+ 
+#         query += """
+#         AND CAST(received_on AS DATE) = CAST(GETDATE() AS DATE)
+#         """
+ 
+ 
+#     elif date == "7days":
+ 
+#         query += """
+#         AND received_on >= DATEADD(day,-7,GETDATE())
+#         """
+ 
+ 
+#     elif date == "30days":
+ 
+#         query += """
+#         AND received_on >= DATEADD(day,-30,GETDATE())
+#         """
+ 
+#     query += " ORDER BY received_on DESC"
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(query, tuple(params))
+ 
+#         rows = cur.fetchall()
+ 
+#         return [row_to_dict(cur, row) for row in rows]
+   
+# #get one email
+ 
+# def get_email(email_id: int):
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(
+#             f"""
+#             SELECT *
+#             FROM {SCHEMA}.Emails
+#             WHERE id=?
+#             """,
+#             (email_id,),
+#         )
+ 
+#         row = cur.fetchone()
+ 
+#         return row_to_dict(cur, row)
+ 
+# def update_email_status(email_id: int, status: str):
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(
+#             f"""
+#             UPDATE {SCHEMA}.Emails
+#             SET status=?
+#             WHERE id=?
+#             """,
+#             (status, email_id),
+#         )
+ 
+#     return get_email(email_id)
+ 
+# def get_mailboxes():
+ 
+#     return [
+#         "careers",
+#         "operations",
+#         "info",
+#         "hr",
+#         "support",
+#         "sales"
+#     ]
+ 
+ 
+# def get_categories():
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(
+#             f"""
+#             SELECT DISTINCT category
+#             FROM {SCHEMA}.Emails
+#             ORDER BY category
+#             """
+#         )
+ 
+#         rows = cur.fetchall()
+ 
+#         return [row[0] for row in rows]
+ 
+ 
+# def get_priorities():
+ 
+#     return [
+#         "High",
+#         "Medium",
+#         "Low"
+#     ]
+ 
+# def get_statuses():
+ 
+#     with get_cursor() as cur:
+ 
+#         cur.execute(
+#             f"""
+#             SELECT DISTINCT status
+#             FROM {SCHEMA}.Emails
+#             ORDER BY status
+#             """
+#         )
+ 
+#         rows = cur.fetchall()
+ 
+#         return [row[0] for row in rows]
+ 

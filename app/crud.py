@@ -131,23 +131,6 @@ def get_thread_emails(thread_id: int):
 
         return [row_to_dict(cur, row) for row in rows]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #insert emails
 
 def create_email(email):
@@ -218,23 +201,86 @@ def create_email(email):
 
 #get all emails
 
-def get_emails():
+def get_emails(mailbox=None,
+            priority=None,
+            status=None,
+            category=None,
+            sender=None,):
+
+    query = f"""
+    SELECT *
+    FROM {SCHEMA}.Emails
+    WHERE 1=1
+    """
+    params = []
+
+    if mailbox and mailbox.lower() != "all":
+        query += " AND mailbox=?"
+        params.append(mailbox)
+
+    if priority:
+        query += " AND priority=?"
+        params.append(priority)
+
+    if status:
+        query += " AND status=?"
+        params.append(status)
+    if category:
+        query += " AND category=?"
+        params.append(category)
+    if sender:
+        query += " AND sender=?"
+        params.append(sender)
+
+    query += " ORDER BY received_on DESC"
 
     with get_cursor() as cur:
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+        return [row_to_dict(cur, row) for row in rows]
 
+
+def get_mailboxes():
+    return [
+        "careers",
+        "operations",
+        "info",
+        "hr",
+        "support",
+        "sales",
+        # add the remaining names to make 9
+    ]
+
+def get_priorities():
+    return ["High", "Medium", "Low"]
+
+
+def get_statuses():
+    with get_cursor() as cur:
         cur.execute(
             f"""
-            SELECT *
+            SELECT DISTINCT status
             FROM {SCHEMA}.Emails
-            ORDER BY received_on DESC
+            WHERE status IS NOT NULL AND status <> ''
+            ORDER BY status
             """
         )
+        return [row[0] for row in cur.fetchall()]
 
-        rows = cur.fetchall()
 
-        return [row_to_dict(cur, row) for row in rows]
+def get_categories():
+    with get_cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT DISTINCT category
+            FROM {SCHEMA}.Emails
+            WHERE category IS NOT NULL AND category <> ''
+            ORDER BY category
+            """
+        )
+        return [row[0] for row in cur.fetchall()]
+        
 #get one email
-
 def get_email(email_id: int):
 
     with get_cursor() as cur:
