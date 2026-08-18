@@ -205,7 +205,9 @@ def get_emails(mailbox=None,
             priority=None,
             status=None,
             category=None,
-            sender=None,):
+            sender=None,
+            from_date=None,
+            to_date=None,):
 
     query = f"""
     SELECT *
@@ -231,6 +233,15 @@ def get_emails(mailbox=None,
     if sender:
         query += " AND sender=?"
         params.append(sender)
+
+    if from_date:
+        query += " AND received_on >= ?"
+        params.append(from_date)
+        
+    if to_date:
+        query += " AND received_on < DATEADD(day, 1, ?)"
+        params.append(to_date)
+
 
     query += " ORDER BY received_on DESC"
 
@@ -279,7 +290,7 @@ def get_categories():
             """
         )
         return [row[0] for row in cur.fetchall()]
-        
+
 #get one email
 def get_email(email_id: int):
 

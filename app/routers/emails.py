@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-
+from datetime import date
 from app import schemas, crud
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(
     prefix="/emails",
@@ -28,14 +29,26 @@ def get_all_emails(
     priority: str | None = None,
     status: str | None = None,
     category: str | None = None,
-    sender: str | None = None):
+    sender: str | None = None,
+    from_date: date | None = None,
+    to_date: date | None = None,):
+
+    if from_date and to_date and from_date > to_date:
+        raise HTTPException(
+            status_code=400,
+            detail="from_date cannot be later than to_date.",
+        )
 
     return crud.get_emails(
         mailbox=mailbox,
         priority=priority,
         status=status,
         category=category,
-        sender=sender)
+        sender=sender,
+        from_date=from_date,
+        to_date=to_date,)
+
+
 
 @router.get("/mailboxes", response_model=list[str])
 def get_mailboxes():
