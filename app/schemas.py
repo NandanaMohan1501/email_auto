@@ -16,6 +16,7 @@ class EmailCreate(BaseModel):
 
 class EmailResponse(EmailCreate):
     id: int
+    thread_id: int | None = None
     status: str
     category: str | None = None
     priority: str | None = None
@@ -30,6 +31,19 @@ class ThreadResponse(BaseModel):
     mailbox: str
     status: str
     summary: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class ConversationListItem(BaseModel):
+    thread_id: int
+    mailbox: str
+    subject: str
+    priority: str | None = None
+    status: str | None = None
+    category: str | None = None
+    received_on: datetime
 
     class Config:
         from_attributes = True

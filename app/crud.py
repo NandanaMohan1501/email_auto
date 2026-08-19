@@ -95,6 +95,76 @@ def get_threads():
         return [row_to_dict(cur, row) for row in rows]
 
 
+def get_dashboard_threads(
+    mailbox=None,
+    priority=None,
+    status=None,
+    category=None,
+    sender=None,
+    from_date=None,
+    to_date=None,
+):
+    query = f"""
+    WITH LatestEmails AS
+    (
+        SELECT
+            e.*,
+            ROW_NUMBER() OVER (
+                PARTITION BY e.thread_id
+                ORDER BY e.received_on DESC, e.id DESC
+            ) AS row_number
+        FROM {SCHEMA}.Emails e
+        WHERE e.thread_id IS NOT NULL
+    )
+    SELECT
+        thread_id,
+        mailbox,
+        subject,
+        priority,
+        status,
+        category,
+        received_on
+    FROM LatestEmails
+    WHERE row_number = 1
+    """
+    params = []
+
+    if mailbox and mailbox.lower() != "all":
+        query += " AND mailbox = ?"
+        params.append(mailbox)
+
+    if priority:
+        query += " AND priority = ?"
+        params.append(priority)
+
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+
+    if category:
+        query += " AND category = ?"
+        params.append(category)
+
+    if sender:
+        query += " AND sender = ?"
+        params.append(sender)
+
+    if from_date:
+        query += " AND received_on >= ?"
+        params.append(from_date)
+
+    if to_date:
+        query += " AND received_on < DATEADD(day, 1, ?)"
+        params.append(to_date)
+
+    query += " ORDER BY received_on DESC, thread_id DESC"
+
+    with get_cursor() as cur:
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+        return [row_to_dict(cur, row) for row in rows]
+
+
 def get_thread(thread_id: int):
 
     with get_cursor() as cur:
